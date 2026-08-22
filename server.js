@@ -19,7 +19,7 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
 
-const PASS_THRESHOLD = 30; // % - below this, resume "passes" (per your spec)
+const PASS_THRESHOLD = 25; // % - below this, resume "passes" (per your spec)
 
 /**
  * Extracts plain text from an uploaded resume file buffer based on mimetype.
@@ -148,5 +148,22 @@ app.post('/analyze-image', upload.single('image'), async (req, res) => {
   }
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Resume AI Detector running on http://localhost:${PORT}`));
+const PORT = process.env.PORT || 3001;
+
+function startServer(port) {
+  const server = app.listen(port, () => {
+    console.log(`Resume AI Detector running on http://localhost:${port}`);
+  });
+
+  server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+      console.warn(`Port ${port} is busy; trying port ${Number(port) + 1}.`);
+      startServer(Number(port) + 1);
+      return;
+    }
+
+    throw err;
+  });
+}
+
+startServer(PORT);
