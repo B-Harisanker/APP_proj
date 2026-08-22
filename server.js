@@ -5,8 +5,9 @@ const multer = require('multer');
 const pdfParse = require('pdf-parse');
 const mammoth = require('mammoth');
 
-const { heuristicScore } = require('./heuristics');
-const { analyzeWithGemini } = require('./gemini');
+const { heuristicScore } = require('./Heuristics');
+const { analyzeWithGemini } = require('./Gemini');
+const { analyzeImageWithGemini } = require('./gemini-vision');
 
 const app = express();
 const upload = multer({
@@ -114,6 +115,36 @@ app.post('/analyze', upload.single('resume'), async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: err.message || 'Analysis failed.' });
+  }
+});
+
+app.post('/analyze-image', upload.single('image'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No image uploaded.' });
+    }
+
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!allowedTypes.includes(req.file.mimetype)) {
+      return res.status(400).json({ error: 'Unsupported image type. Please upload a JPG, PNG, or WEBP image.' });
+    }
+
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      return res.status(500).json({ error: 'Server misconfigured: GEMINI_API_KEY missing.' });
+    }
+
+    const verdict = await analyzeImageWithGemini(req.file, apiKey);
+    res.json({
+      aiLikelihood: verdict.ai_likelihood_percent,
+      verdictLabel: verdict.verdict_label,
+      reasoning: verdict.reasoning,
+      flaggedArtifacts: verdict.flagged_artifacts,
+      disclaimer: 'This estimate is unreliable against the newest AI image generators. Treat a "likely real" result with particular skepticism, not confidence.'
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message || 'Image analysis failed. Please try again.' });
   }
 });
 
