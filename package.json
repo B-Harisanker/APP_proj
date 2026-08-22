@@ -1,0 +1,23 @@
+{
+  "name": "resume-ai-detector",
+  "version": "1.0.0",
+  "description": "Detects likelihood that a resume was AI-generated using heuristics + Gemini API",
+  "main": "server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "multer": "^1.4.5-lts.1",
+    "pdf-parse": "^1.1.1",
+    "mammoth": "^1.7.2",
+    "dotenv": "^16.4.5",
+    "node-fetch": "^2.7.0",
+    "cors": "^2.8.5"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.4"
+  }
+}

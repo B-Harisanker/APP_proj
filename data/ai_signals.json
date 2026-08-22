@@ -1,0 +1,37 @@
+{
+  "buzzwords": [
+    "leverage", "leveraging", "spearheaded", "utilize", "utilizing", "utilized",
+    "synergy", "synergize", "streamline", "streamlined", "robust", "dynamic",
+    "cutting-edge", "state-of-the-art", "seamless", "seamlessly", "holistic",
+    "paradigm", "innovative solutions", "results-driven", "detail-oriented",
+    "self-starter", "team player", "go-getter", "proactively", "proactive",
+    "orchestrated", "spearheading", "championed", "cultivated", "fostered",
+    "meticulous", "meticulously", "comprehensive", "multifaceted",
+    "trailblazer", "game-changer", "unparalleled", "unwavering",
+    "passionate about", "thrive in fast-paced", "wear many hats",
+    "hit the ground running", "think outside the box", "value-added",
+    "best-in-class", "world-class", "next-level", "end-to-end",
+    "cross-functional collaboration", "stakeholder alignment",
+    "actionable insights", "data-driven decisions", "impactful results",
+    "delve into", "delve", "underscore", "underscores",
+    "in today's fast-paced world", "in the ever-evolving landscape",
+    "moreover", "furthermore", "additionally", "notably", "it is worth noting",
+    "plays a pivotal role", "pivotal role", "testament to", "at the forefront of",
+    "unlock potential", "unlocking potential", "empower", "empowering",
+    "elevate", "elevating", "harness the power", "drive growth", "drive results"
+  ],
+  "cliche_openers": [
+    "highly motivated", "results-oriented professional", "dynamic professional",
+    "seasoned professional", "accomplished professional", "dedicated professional",
+    "passionate individual", "driven individual"
+  ],
+  "structural_flags": {
+    "description": "Patterns common in LLM-generated bullet points",
+    "patterns": [
+      "^(Spearheaded|Orchestrated|Championed|Leveraged|Streamlined|Cultivated|Fostered)\\s",
+      "\\bby\\s\\d+%\\b",
+      "resulting in a \\d+% (increase|decrease|improvement)",
+      "^(Successfully|Effectively)\\s"
+    ]
+  }
+}

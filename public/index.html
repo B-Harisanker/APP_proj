@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Resume AI Scanner</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap');
+
+  :root {
+    --bg: #070a12;
+    --panel: rgba(15, 20, 34, .78);
+    --panel-strong: #101628;
+    --border: rgba(130, 151, 190, .22);
+    --text: #edf3ff;
+    --muted: #8995aa;
+    --cyan: #4de7ff;
+    --purple: #9b7cff;
+    --pink: #ff5ebc;
+    --green: #55e6a5;
+    --red: #ff667a;
+    --display: 'Space Grotesk', sans-serif;
+    --body: 'Inter', sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    color: var(--text);
+    font-family: var(--body);
+    background:
+      radial-gradient(circle at 12% 12%, rgba(77,231,255,.12), transparent 28%),
+      radial-gradient(circle at 88% 18%, rgba(155,124,255,.15), transparent 30%),
+      radial-gradient(circle at 50% 100%, rgba(255,94,188,.08), transparent 32%),
+      var(--bg);
+    padding: 34px 18px 70px;
+    overflow-x: hidden;
+  }
+
+  body::before,
+  body::after {
+    content: "";
+    position: fixed;
+    width: 360px;
+    height: 360px;
+    border-radius: 50%;
+    filter: blur(80px);
+    pointer-events: none;
+    z-index: -1;
+  }
+
+  body::before {
+    background: rgba(77,231,255,.06);
+    top: -160px;
+    left: -140px;
+  }
+
+  body::after {
+    background: rgba(155,124,255,.07);
+    right: -150px;
+    bottom: -150px;
+  }
+
+  .wrap {
+    max-width: 920px;
+    width: 100%;
+    margin: auto;
+  }
+
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    padding: 7px 11px;
+    border: 1px solid rgba(77,231,255,.25);
+    border-radius: 999px;
+    background: rgba(77,231,255,.055);
+    color: var(--cyan);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    box-shadow: 0 0 24px rgba(77,231,255,.07);
+  }
+
+  .eyebrow::before {
+    content: "";
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--cyan);
+    box-shadow: 0 0 12px var(--cyan);
+  }
+
+  h1 {
+    max-width: 800px;
+    margin: 22px 0 14px;
+    font-family: var(--display);
+    font-size: clamp(40px, 7vw, 72px);
+    line-height: .98;
+    letter-spacing: -.055em;
+    background: linear-gradient(100deg, #fff, #bcefff 42%, #b9a7ff 78%, #ff9bd7);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .sub {
+    max-width: 720px;
+    margin-bottom: 27px;
+    color: var(--muted);
+    font-size: 15px;
+    line-height: 1.7;
+  }
+
+  .dropzone {
+    position: relative;
+    overflow: hidden;
+    padding: 54px 28px 45px;
+    text-align: center;
+    cursor: pointer;
+    border: 1px solid rgba(77,231,255,.28);
+    border-radius: 22px;
+    background:
+      linear-gradient(135deg, rgba(77,231,255,.055), rgba(155,124,255,.035)),
+      rgba(12,17,30,.78);
+    backdrop-filter: blur(18px);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.055),
+      0 22px 70px rgba(0,0,0,.28);
+    transition: transform .25s ease, border-color .25s ease, box-shadow .25s ease;
+  }
+
+  .dropzone::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px);
+    background-size: 30px 30px;
+    mask-image: linear-gradient(to bottom, black, transparent 85%);
+    pointer-events: none;
+  }
+
+  .dropzone::after {
+    content: "";
+    position: absolute;
+    width: 220px;
+    height: 220px;
+    border-radius: 50%;
+    background: rgba(77,231,255,.08);
+    filter: blur(45px);
+    top: -130px;
+    right: -80px;
+    pointer-events: none;
+  }
+
+  .dropzone:hover,
+  .dropzone.drag {
+    transform: translateY(-3px);
+    border-color: rgba(77,231,255,.75);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.08),
+      0 0 0 1px rgba(77,231,255,.08),
+      0 25px 75px rgba(0,0,0,.32),
+      0 0 50px rgba(77,231,255,.07);
+  }
+
+  .dropzone input { display: none; }
+
+  #dzText {
+    position: relative;
+    z-index: 1;
+    font-family: var(--display);
+    font-size: 19px;
+    font-weight: 600;
+    color: #f3f7ff;
+  }
+
+  .hint {
+    position: relative;
+    z-index: 1;
+    margin-top: 10px;
+    color: var(--muted);
+    font-size: 11px;
+  }
+
+  .filename {
+    position: relative;
+    z-index: 1;
+    display: inline-block;
+    margin-top: 16px;
+    padding: 8px 12px;
+    border: 1px solid rgba(85,230,165,.24);
+    border-radius: 999px;
+    background: rgba(85,230,165,.07);
+    color: var(--green);
+    font-size: 11px;
+  }
+
+  button.go {
+    position: relative;
+    overflow: hidden;
+    width: 100%;
+    margin-top: 18px;
+    padding: 16px 20px;
+    border: 1px solid rgba(77,231,255,.5);
+    border-radius: 14px;
+    background: linear-gradient(100deg, #183b55, #34305f);
+    color: white;
+    font-family: var(--body);
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    cursor: pointer;
+    box-shadow:
+      0 10px 35px rgba(0,0,0,.25),
+      inset 0 1px 0 rgba(255,255,255,.1);
+    transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+  }
+
+  button.go::after {
+    content: "  ↗";
+    color: var(--cyan);
+    font-size: 15px;
+  }
+
+  button.go::before {
+    content: "";
+    position: absolute;
+    inset: -80px -30%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,.13), transparent);
+    transform: translateX(-100%) rotate(8deg);
+    transition: transform .55s ease;
+  }
+
+  button.go:hover:not(:disabled) {
+    transform: translateY(-2px);
+    border-color: rgba(77,231,255,.9);
+    box-shadow:
+      0 15px 40px rgba(0,0,0,.3),
+      0 0 30px rgba(77,231,255,.1);
+  }
+
+  button.go:hover:not(:disabled)::before {
+    transform: translateX(100%) rotate(8deg);
+  }
+
+  button.go:active:not(:disabled) { transform: translateY(0); }
+
+  button.go:disabled {
+    opacity: .42;
+    cursor: not-allowed;
+  }
+
+  .scanline {
+    display: none;
+    margin-top: 18px;
+    padding: 12px 15px;
+    border: 1px solid rgba(77,231,255,.22);
+    border-radius: 12px;
+    background: rgba(77,231,255,.055);
+    color: var(--cyan);
+    font-family: var(--mono);
+    font-size: 11px;
+    box-shadow: 0 0 25px rgba(77,231,255,.04);
+  }
+
+  .scanline.active {
+    display: block;
+    animation: scanpulse 1.1s ease-in-out infinite;
+  }
+
+  @keyframes scanpulse {
+    50% { opacity: .42; box-shadow: 0 0 35px rgba(77,231,255,.12); }
+  }
+
+  .error {
+    margin-top: 15px;
+    padding: 12px 14px;
+    border: 1px solid rgba(255,102,122,.3);
+    border-radius: 12px;
+    background: rgba(255,102,122,.07);
+    color: var(--red);
+    font-size: 12px;
+  }
+
+  .result {
+    display: none;
+    margin-top: 32px;
+    animation: rise .4s ease both;
+  }
+
+  .result.show { display: block; }
+
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .score-row {
+    position: relative;
+    display: flex;
+    align-items: flex-end;
+    gap: 18px;
+    min-height: 190px;
+    padding: 27px;
+    overflow: hidden;
+    border: 1px solid rgba(155,124,255,.3);
+    border-radius: 22px;
+    background:
+      radial-gradient(circle at 90% 20%, rgba(155,124,255,.18), transparent 32%),
+      linear-gradient(135deg, rgba(77,231,255,.08), rgba(155,124,255,.08)),
+      var(--panel);
+    backdrop-filter: blur(18px);
+    box-shadow: 0 25px 70px rgba(0,0,0,.3);
+  }
+
+  .score-row::before {
+    content: "AI DETECTION";
+    position: absolute;
+    top: 18px;
+    left: 22px;
+    color: #8290a7;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: .16em;
+  }
+
+  .score-row::after {
+    content: "● LIVE ANALYSIS";
+    position: absolute;
+    top: 18px;
+    right: 22px;
+    color: var(--green);
+    font-size: 9px;
+    letter-spacing: .12em;
+    text-shadow: 0 0 12px rgba(85,230,165,.35);
+  }
+
+  .score-number {
+    margin-top: 20px;
+    font-size: clamp(64px, 12vw, 100px);
+    font-weight: 800;
+    line-height: .82;
+    letter-spacing: -.075em;
+    text-shadow: 0 0 35px rgba(77,231,255,.12);
+  }
+
+  .score-number.pass { color: var(--green); }
+  .score-number.fail { color: #ff7f91; }
+
+  .score-label {
+    margin-top: 10px;
+    color: var(--muted);
+    font-size: 10px;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+  }
+
+  .bar-track {
+    height: 10px;
+    margin: 18px 2px 7px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: #1a2232;
+  }
+
+  .bar-fill {
+    height: 100%;
+    border-radius: inherit;
+    transition: width .75s cubic-bezier(.22,.61,.36,1);
+    box-shadow: 0 0 18px currentColor;
+  }
+
+  .bar-fill.pass {
+    background: linear-gradient(90deg, #2abf86, var(--green));
+    color: var(--green);
+  }
+
+  .bar-fill.fail {
+    background: linear-gradient(90deg, #e84e69, #ff8191);
+    color: var(--red);
+  }
+
+  .threshold-note {
+    color: var(--muted);
+    font-size: 10px;
+  }
+
+  .verdict {
+    margin-top: 20px;
+    padding: 18px 19px;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: var(--panel);
+    backdrop-filter: blur(14px);
+    font-size: 14px;
+    line-height: 1.65;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.035);
+  }
+
+  .verdict.fail { border-color: rgba(255,102,122,.35); box-shadow: inset 4px 0 0 var(--red); }
+  .verdict.pass { border-color: rgba(85,230,165,.3); box-shadow: inset 4px 0 0 var(--green); }
+
+  .details {
+    margin-top: 20px;
+    padding: 23px;
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    background: rgba(12,17,29,.7);
+    backdrop-filter: blur(15px);
+  }
+
+  .details h3 {
+    margin: 0 0 9px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+    color: #d9e2f3;
+    font-family: var(--display);
+    font-size: 11px;
+    letter-spacing: .13em;
+    text-transform: uppercase;
+  }
+
+  .breakdown-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 12px 0;
+    border-bottom: 1px solid rgba(130,151,190,.12);
+    color: #9aa7bb;
+    font-size: 12px;
+  }
+
+  .breakdown-row span:last-child {
+    color: var(--cyan);
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .tag {
+    display: inline-block;
+    margin: 4px 4px 0 0;
+    padding: 6px 9px;
+    border: 1px solid rgba(155,124,255,.28);
+    border-radius: 999px;
+    background: rgba(155,124,255,.08);
+    color: #c7baff;
+    font-size: 10px;
+  }
+
+  .snippet {
+    margin: 7px 0;
+    padding: 9px 12px;
+    border-left: 2px solid var(--pink);
+    border-radius: 0 8px 8px 0;
+    background: rgba(255,94,188,.045);
+    color: #aab5c7;
+    font-size: 12px;
+    line-height: 1.55;
+  }
+
+  #reasoning {
+    color: #aab5c7 !important;
+    font-size: 13px;
+    line-height: 1.7;
+  }
+
+  .disclaimer {
+    margin-top: 20px;
+    padding: 14px 2px 0;
+    border-top: 1px solid var(--border);
+    color: #68758a;
+    font-size: 10px;
+    line-height: 1.65;
+  }
+
+  @media (max-width: 600px) {
+    body { padding: 22px 12px 45px; }
+    .dropzone { padding: 46px 18px 38px; }
+    .score-row { min-height: 165px; padding: 22px; }
+    .score-row::after { top: 42px; left: 22px; right: auto; }
+    .details { padding: 18px 15px; }
+    .breakdown-row { font-size: 11px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">AI Resume Detector</div>
+  <h1>Is this resume AI-written?</h1>
+  <div class="sub">Upload a resume (PDF, DOCX, or TXT). We combine phrase-pattern analysis with a Gemini-powered linguistic read to estimate AI-generation likelihood.</div>
+
+  <div class="dropzone" id="dropzone">
+    <input type="file" id="fileInput" accept=".pdf,.docx,.txt" />
+    <div id="dzText">Drop resume here or click to browse</div>
+    <div class="hint">PDF · DOCX · TXT — max 5MB</div>
+    <div class="filename" id="filename"></div>
+  </div>
+
+  <button class="go" id="analyzeBtn" disabled>Analyze resume</button>
+  <div class="scanline" id="scanline">scanning document · cross-referencing phrase patterns · querying model…</div>
+  <div class="error" id="errorBox"></div>
+
+  <div class="result" id="result">
+    <div class="score-row">
+      <div>
+        <div class="score-number" id="scoreNumber">0%</div>
+        <div class="score-label">estimated AI likelihood</div>
+      </div>
+    </div>
+    <div class="bar-track"><div class="bar-fill" id="barFill" style="width:0%"></div></div>
+    <div class="threshold-note">Fails at 30% and above</div>
+
+    <div class="verdict" id="verdict"></div>
+
+    <div class="details">
+      <h3>Score breakdown</h3>
+      <div class="breakdown-row"><span>Heuristic (phrase/pattern) score</span><span id="heuristicScore">—</span></div>
+      <div class="breakdown-row"><span>Gemini linguistic analysis score</span><span id="geminiScore">—</span></div>
+      <div class="breakdown-row"><span>Gemini confidence</span><span id="geminiConfidence">—</span></div>
+
+      <h3 style="margin-top:18px;">Gemini's reasoning</h3>
+      <div id="reasoning" style="color:#444;"></div>
+
+      <h3 style="margin-top:18px;">Flagged phrases</h3>
+      <div id="flaggedTags"></div>
+
+      <h3 style="margin-top:18px;">Buzzwords detected</h3>
+      <div id="buzzTags"></div>
+    </div>
+
+    <div class="disclaimer" id="disclaimerText"></div>
+  </div>
+</div>
+
+<script>
+  const dropzone = document.getElementById('dropzone');
+  const fileInput = document.getElementById('fileInput');
+  const filenameEl = document.getElementById('filename');
+  const analyzeBtn = document.getElementById('analyzeBtn');
+  const scanline = document.getElementById('scanline');
+  const resultEl = document.getElementById('result');
+  const errorBox = document.getElementById('errorBox');
+
+  let selectedFile = null;
+
+  dropzone.addEventListener('click', () => fileInput.click());
+  dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag'); });
+  dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag'));
+  dropzone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropzone.classList.remove('drag');
+    if (e.dataTransfer.files.length) {
+      selectedFile = e.dataTransfer.files[0];
+      updateFileDisplay();
+    }
+  });
+  fileInput.addEventListener('change', () => {
+    if (fileInput.files.length) {
+      selectedFile = fileInput.files[0];
+      updateFileDisplay();
+    }
+  });
+
+  function updateFileDisplay() {
+    filenameEl.textContent = selectedFile ? `Selected: ${selectedFile.name}` : '';
+    analyzeBtn.disabled = !selectedFile;
+  }
+
+  analyzeBtn.addEventListener('click', async () => {
+    if (!selectedFile) return;
+    errorBox.textContent = '';
+    resultEl.classList.remove('show');
+    scanline.classList.add('active');
+    analyzeBtn.disabled = true;
+
+    const formData = new FormData();
+    formData.append('resume', selectedFile);
+
+    try {
+      const res = await fetch('/analyze', { method: 'POST', body: formData });
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Analysis failed.');
+      }
+
+      renderResult(data);
+    } catch (err) {
+      errorBox.textContent = err.message;
+    } finally {
+      scanline.classList.remove('active');
+      analyzeBtn.disabled = false;
+    }
+  });
+
+  function renderResult(data) {
+    const pass = data.passed;
+    const scoreNumber = document.getElementById('scoreNumber');
+    const barFill = document.getElementById('barFill');
+    const verdict = document.getElementById('verdict');
+
+    scoreNumber.textContent = data.finalScore + '%';
+    scoreNumber.className = 'score-number ' + (pass ? 'pass' : 'fail');
+    barFill.style.width = data.finalScore + '%';
+    barFill.className = 'bar-fill ' + (pass ? 'pass' : 'fail');
+
+    verdict.textContent = data.verdictMessage;
+    verdict.className = 'verdict ' + (pass ? 'pass' : 'fail');
+
+    document.getElementById('heuristicScore').textContent = data.breakdown.heuristicScore + '%';
+    document.getElementById('geminiScore').textContent = data.breakdown.geminiScore + '%';
+    document.getElementById('geminiConfidence').textContent = data.breakdown.geminiConfidence || '—';
+    document.getElementById('reasoning').textContent = data.breakdown.geminiReasoning || '—';
+    document.getElementById('disclaimerText').textContent = data.disclaimer;
+
+    const flaggedTags = document.getElementById('flaggedTags');
+    flaggedTags.innerHTML = '';
+    (data.breakdown.flaggedSnippets || []).forEach(s => {
+      const div = document.createElement('div');
+      div.className = 'snippet';
+      div.textContent = '"' + s + '"';
+      flaggedTags.appendChild(div);
+    });
+    if (!data.breakdown.flaggedSnippets || data.breakdown.flaggedSnippets.length === 0) {
+      flaggedTags.innerHTML = '<span style="color:#888;">None flagged</span>';
+    }
+
+    const buzzTags = document.getElementById('buzzTags');
+    buzzTags.innerHTML = '';
+    (data.breakdown.buzzwordsFound || []).forEach(b => {
+      const span = document.createElement('span');
+      span.className = 'tag';
+      span.textContent = `${b.phrase} × ${b.count}`;
+      buzzTags.appendChild(span);
+    });
+    if (!data.breakdown.buzzwordsFound || data.breakdown.buzzwordsFound.length === 0) {
+      buzzTags.innerHTML = '<span style="color:#888;">None found</span>';
+    }
+
+    resultEl.classList.add('show');
+  }
+</script>
+</body>
+</html>
