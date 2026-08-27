@@ -2,29 +2,20 @@ const fetch = require('node-fetch');
 
 const GEMINI_MODEL = 'gemini-3.6-flash';
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
+const prompts = require('./data/vision_prompts.json');
 
-function buildImagePrompt() {
-  return `You are an image forensics analyst. Estimate whether this image was generated or materially created by an AI image generator.
+const STANDARD_MODE = 'ai-detection';
+const VALID_MODES = new Set(Object.keys(prompts));
 
-Inspect the image systematically for these artifact categories:
-1. Lighting and shadows: check whether light direction, reflections, contact shadows, and cast shadows agree.
-2. Textures and patterns: check for unnaturally regular repetition, melted detail, inconsistent materials, or overly smooth microtexture.
-3. Anatomy and objects: check hands, fingers, faces, eyes, teeth, limbs, object geometry, and physical intersections for inconsistencies.
-4. Background text and symbols: check signs, labels, logos, and writing for distorted, invented, or inconsistent characters.
-5. Global rendering: check edges, depth of field, perspective, fine detail, and whether the image has suspiciously uniform polish.
-
-Be conservative. A polished photograph is not automatically AI-generated, and compression or editing artifacts are not proof. Reserve high scores for multiple compounding signals. No vision model is reliable against the newest AI image generators, so state uncertainty when evidence is weak.
-
-Return ONLY valid JSON, no markdown fences, in exactly this shape:
-{
-  "ai_likelihood_percent": <integer 0-100>,
-  "verdict_label": "Likely AI-generated" or "Likely real" or "Inconclusive",
-  "reasoning": "<2-4 sentence explanation citing visible evidence>",
-  "flagged_artifacts": ["<short artifact finding>", "<short artifact finding>"]
-}`;
+function parseGeminiJson(rawText) {
+  try {
+    return JSON.parse(rawText);
+  } catch (error) {
+    return JSON.parse(rawText.replace(/```json|```/g, '').trim());
+  }
 }
 
-async function analyzeImageWithGemini(file, apiKey) {
+async function requestImageAnalysis(file, apiKey, prompt) {
   const response = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -32,7 +23,7 @@ async function analyzeImageWithGemini(file, apiKey) {
       contents: [{
         parts: [
           { inline_data: { mime_type: file.mimetype, data: file.buffer.toString('base64') } },
-          { text: buildImagePrompt() }
+          { text: prompt }
         ]
       }],
       generationConfig: {
@@ -51,11 +42,22 @@ async function analyzeImageWithGemini(file, apiKey) {
   const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
   if (!rawText) throw new Error('Gemini returned no usable content.');
 
+  return parseGeminiJson(rawText);
+}
+
+async function analyzeImageWithGemini(file, apiKey, mode = STANDARD_MODE, caption = '') {
+  const requestedMode = VALID_MODES.has(mode) ? mode : STANDARD_MODE;
+  let prompt = prompts[requestedMode];
+  if (requestedMode === 'context-check' && caption.trim()) {
+    prompt += `\n\nThe user supplied this claimed caption or context: "${caption.trim()}"`;
+  }
+
   try {
-    return JSON.parse(rawText);
+    return { mode: requestedMode, result: await requestImageAnalysis(file, apiKey, prompt) };
   } catch (error) {
-    return JSON.parse(rawText.replace(/```json|```/g, '').trim());
+    if (requestedMode !== 'explain') throw error;
+    return { mode: STANDARD_MODE, result: await requestImageAnalysis(file, apiKey, prompts[STANDARD_MODE]) };
   }
 }
 
-module.exports = { analyzeImageWithGemini };
+module.exports = { analyzeImageWithGemini, VALID_MODES };

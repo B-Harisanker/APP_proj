@@ -7,7 +7,7 @@ const mammoth = require('mammoth');
 
 const { heuristicScore } = require('./Heuristics');
 const { analyzeWithGemini } = require('./Gemini');
-const { analyzeImageWithGemini } = require('./gemini-vision');
+const { analyzeImageWithGemini, VALID_MODES } = require('./gemini-vision');
 
 const app = express();
 const upload = multer({
@@ -129,18 +129,25 @@ app.post('/analyze-image', upload.single('image'), async (req, res) => {
       return res.status(400).json({ error: 'Unsupported image type. Please upload a JPG, PNG, or WEBP image.' });
     }
 
+    const mode = req.body.mode || 'ai-detection';
+    if (!VALID_MODES.has(mode)) {
+      return res.status(400).json({ error: 'Unsupported image analysis mode.' });
+    }
+
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
       return res.status(500).json({ error: 'Server misconfigured: GEMINI_API_KEY missing.' });
     }
 
-    const verdict = await analyzeImageWithGemini(req.file, apiKey);
-    res.json({
-      aiLikelihood: verdict.ai_likelihood_percent,
-      verdictLabel: verdict.verdict_label,
-      reasoning: verdict.reasoning,
-      flaggedArtifacts: verdict.flagged_artifacts,
-      disclaimer: 'This estimate is unreliable against the newest AI image generators. Treat a "likely real" result with particular skepticism, not confidence.'
+    const analysis = await analyzeImageWithGemini(req.file, apiKey, mode, req.body.caption || '');
+    const verdict = analysis.result;
+    res.json({ mode: analysis.mode, ...verdict, disclaimer: analysis.mode === 'context-check'
+      ? 'These are visible clues to check, not a confirmation or rejection of any caption.'
+      : analysis.mode === 'tamper-check'
+        ? 'This is visual evidence of possible localized editing, not legal or forensic proof.'
+        : analysis.mode === 'explain'
+          ? 'This explanation is educational and probabilistic, not a definitive determination.'
+          : 'This estimate is unreliable against the newest AI image generators. Treat a "likely real" result with particular skepticism, not confidence.'
     });
   } catch (err) {
     console.error(err);
