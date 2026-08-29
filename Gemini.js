@@ -46,8 +46,8 @@ ${resumeText}
 """`;
 }
 
-/**
- * Calls Gemini and returns the parsed verdict object.
+/*
+   Calls Gemini and returns the parsed verdict object.
  */
 async function analyzeWithGemini(resumeText, apiKey) {
   const prompt = buildPrompt(resumeText);
